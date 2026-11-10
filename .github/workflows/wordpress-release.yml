@@ -35,12 +35,21 @@ jobs:
       - name: Resolve tools ref
         id: tools
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          ref="${GITHUB_WORKFLOW_REF##*@}"
-          ref="${ref#refs/heads/}"
-          ref="${ref#refs/tags/}"
-          if [[ -z "$ref" ]]; then ref="main"; fi
+          # GITHUB_WORKFLOW_REF is the CALLER's ref (e.g. refs/tags/v1.0.0 on a tag push), which does not
+          # exist in this repo. Ask the run which commit of this reusable workflow is actually running.
+          ref="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --jq '[.referenced_workflows[]? | select(.path | test("/\\.github/workflows/wordpress-release\\.yml@"))][0].sha // empty' \
+            2>/dev/null || true)"
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            ref="${GITHUB_WORKFLOW_REF##*@}"
+            if [[ "$ref" == refs/tags/* ]]; then ref="main"; fi
+            ref="${ref#refs/heads/}"
+            if [[ -z "$ref" ]]; then ref="main"; fi
+          fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "Using Howtowp/.github@$ref"
 

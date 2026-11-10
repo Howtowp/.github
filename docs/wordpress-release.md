@@ -146,4 +146,4 @@ Jobs run in the **caller** repository. Minutes used by private product repos cou
 
 ## Pinning
 
-Callers may pin `wordpress-release.yml@<sha>` instead of `@main` once the workflow is stable. The reusable workflow checks out its companion scripts from the same ref it was called with.
+Callers may pin `wordpress-release.yml@<sha>` instead of `@main` once the workflow is stable. The reusable workflow checks out its companion scripts from the exact commit of the workflow that is running (looked up from the run's `referenced_workflows`, so it also works when the caller was started by a tag push such as `refs/tags/v1.0.0`, a ref that does not exist in this repository). The caller needs `actions: read`, which the snippet above already sets.
