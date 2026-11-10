@@ -1,0 +1,33 @@
+# Example .release.yml for a typical plugin at the repo root.
+# Copy into the product repo as .release.yml and adjust.
+
+slug: dr-debug
+zip_slug: dr-debug          # optional; defaults to slug
+main: dr-debug.php
+type: plugin
+# plugin_dir: mellat-payment-gateway   # only if the plugin is in a subdirectory
+
+composer:
+  enabled: false
+  dir: .
+  command: install --no-dev --optimize-autoloader
+
+node:
+  enabled: false
+  dir: .
+  version: "20"
+  install: ci
+  script: build
+
+# Extra paths to drop from the zip (package.sh output is also stripped of these).
+exclude: []
+
+# Paths that must exist in the zip, relative to the zip root.
+keep:
+  - dr-debug.php
+
+use_package_sh: true
+use_distignore: true
+include_vendor: false
+allow_tests: false
+max_zip_mb: 250

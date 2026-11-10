@@ -1,0 +1,174 @@
+# Reusable workflow: build a WordPress-ready zip from an existing v* tag.
+# This does not implement a WordPress dashboard auto-updater.
+# Customers download zips from howtowp.ir (or a private GitHub Release if they have access).
+# The workflow never rewrites plugin/theme source and never creates or moves git tags.
+name: WordPress release zip
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Existing git tag to build (e.g. v1.0.0). Tags are never created or moved.
+        required: true
+        type: string
+      dry_run:
+        description: Build, verify, and upload an artifact; do not create or update a GitHub Release.
+        required: false
+        type: boolean
+        default: false
+      config_path:
+        description: Path to the per-repo release config, relative to the product repository root.
+        required: false
+        type: string
+        default: .release.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: Build installable zip
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Resolve tools ref
+        id: tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="${GITHUB_WORKFLOW_REF##*@}"
+          ref="${ref#refs/heads/}"
+          ref="${ref#refs/tags/}"
+          if [[ -z "$ref" ]]; then ref="main"; fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Using Howtowp/.github@$ref"
+
+      - name: Checkout release tools
+        uses: actions/checkout@v4
+        with:
+          repository: Howtowp/.github
+          ref: ${{ steps.tools.outputs.ref }}
+          path: .htwp-release-tools
+
+      - name: Checkout tagged product source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          path: product
+          persist-credentials: false
+
+      - name: Install Python tooling
+        run: |
+          python3 -m venv "${RUNNER_TEMP}/htwp-venv"
+          "${RUNNER_TEMP}/htwp-venv/bin/pip" install --upgrade pip
+          "${RUNNER_TEMP}/htwp-venv/bin/pip" install pyyaml
+          echo "${RUNNER_TEMP}/htwp-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Load release config
+        id: config
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIG_PATH: ${{ inputs.config_path }}
+          TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="product/${CONFIG_PATH}"
+          used="$dest"
+          if [[ ! -f "$dest" ]]; then
+            echo "Config ${CONFIG_PATH} is not in tag ${TAG}; fetching from the workflow commit ${GITHUB_SHA}."
+            echo "The file is written outside the product tree so package.sh will not pick it up."
+            used="${RUNNER_TEMP}/htwp-release.yml"
+            gh api "repos/${GITHUB_REPOSITORY}/contents/${CONFIG_PATH}?ref=${GITHUB_SHA}" \
+              -H "Accept: application/vnd.github.raw" > "$used"
+          fi
+          echo "config_file=${used}" >> "$GITHUB_OUTPUT"
+          USED_CONFIG="$used" python3 << 'PY'
+          import os
+          import sys
+          from importlib.machinery import SourceFileLoader
+          from pathlib import Path
+
+          mod = SourceFileLoader(
+              "htwp_release",
+              ".htwp-release-tools/scripts/wordpress-release.py",
+          ).load_module()
+          cfg = mod.load_config(Path(os.environ["USED_CONFIG"]))
+          def flag(value: bool) -> str:
+              return "true" if value else "false"
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as fh:
+              fh.write(f"composer={flag(cfg['composer']['enabled'])}\n")
+              fh.write(f"composer_dir={cfg['composer']['dir']}\n")
+              fh.write(f"composer_command={cfg['composer']['command']}\n")
+              fh.write(f"node={flag(cfg['node']['enabled'])}\n")
+              fh.write(f"node_dir={cfg['node']['dir']}\n")
+              fh.write(f"node_version={cfg['node']['version']}\n")
+              fh.write(f"node_install={cfg['node']['install']}\n")
+              fh.write(f"node_script={cfg['node']['script']}\n")
+              fh.write(f"zip_slug={cfg['zip_slug']}\n")
+          print(
+              f"loaded {os.environ['USED_CONFIG']}: slug={cfg['slug']} "
+              f"zip_slug={cfg['zip_slug']} main={cfg['main']} type={cfg['type']}"
+          )
+          PY
+
+      - name: Setup PHP and Composer
+        if: steps.config.outputs.composer == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+          coverage: none
+
+      - name: Composer install
+        if: steps.config.outputs.composer == 'true'
+        working-directory: product/${{ steps.config.outputs.composer_dir }}
+        run: composer ${{ steps.config.outputs.composer_command }}
+
+      - name: Setup Node
+        if: steps.config.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.config.outputs.node_version }}
+
+      - name: npm install and build
+        if: steps.config.outputs.node == 'true'
+        working-directory: product/${{ steps.config.outputs.node_dir }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.config.outputs.node_install }}" == "install" ]]; then
+            npm install
+          else
+            npm ci
+          fi
+          npm run "${{ steps.config.outputs.node_script }}"
+
+      - name: Build, verify, and maybe publish
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            extra+=(--dry-run)
+          fi
+          python3 .htwp-release-tools/scripts/wordpress-release.py \
+            --tag "${{ inputs.tag }}" \
+            --config "${{ steps.config.outputs.config_file }}" \
+            --workspace product \
+            --output-dir "${RUNNER_TEMP}/htwp-dist" \
+            --summary "${RUNNER_TEMP}/htwp-summary.json" \
+            --repo "${GITHUB_REPOSITORY}" \
+            "${extra[@]}"
+          cat "${RUNNER_TEMP}/htwp-summary.json"
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.zip_name }}
+          path: ${{ steps.build.outputs.zip_path }}
+          if-no-files-found: error
+          retention-days: 7
