@@ -1,0 +1,29 @@
+# Example .release.yml for the PROJECT layout: the plugin lives in a subfolder,
+# docs/data/design/research/scripts sit beside it and never ship.
+# See docs/wordpress-release.md#repository-layouts and https://github.com/howtowp/plugin-template
+
+slug: my-plugin
+zip_slug: my-plugin
+type: plugin
+plugin_dir: my-plugin       # the shippable plugin folder
+main: my-plugin.php         # relative to plugin_dir
+
+# composer.dir / node.dir are relative to the REPO root.
+node:
+  enabled: false
+  dir: my-plugin
+composer:
+  enabled: false
+  dir: my-plugin
+
+exclude: []
+keep:
+  - my-plugin.php
+  - readme.txt
+
+use_package_sh: false
+use_distignore: true        # reads my-plugin/.distignore
+include_vendor: false
+allow_tests: false
+copy_root_files: false      # keep the project README.md / CHANGELOG.md out of the zip
+max_zip_mb: 250

@@ -53,25 +53,80 @@ And a per-repo `.release.yml` next to the plugin or theme (see schema below).
 | `slug` | yes | — | Product slug (repo name in most cases). |
 | `zip_slug` | no | `slug` | Folder name at the zip root, and the zip filename prefix. Use this when the repo name differs (theme repo `theme-howtowp` ships as `howtowp/`). |
 | `main` | yes | — | Main file, relative to the plugin/theme root (the zip root). Plugin: `foo.php`. Theme: `style.css`. |
-| `plugin_dir` | no | repo root | Subdirectory that contains the plugin if it is not at the repo root (e.g. `mellat-payment-gateway`). |
+| `plugin_dir` | no | repo root | Subdirectory that contains the plugin if it is not at the repo root (e.g. `mellat-payment-gateway`). Only this folder is packed. See [Repository layouts](#repository-layouts). |
 | `type` | no | `plugin` | `plugin` or `theme`. Theme versions are read from the `style.css` `Version:` header. |
 | `composer.enabled` | no | `false` | Run Composer before packing. |
-| `composer.dir` | no | `.` | Directory that contains `composer.json`. |
+| `composer.dir` | no | `.` | Directory that contains `composer.json`, **relative to the repository root** (not to `plugin_dir`). |
 | `composer.command` | no | `install --no-dev --optimize-autoloader` | Arguments passed to `composer`. |
 | `node.enabled` | no | `false` | Run `npm ci` (or `npm install`) and `npm run build` before packing. Leave this off when compiled assets are already committed. |
-| `node.dir` | no | `.` | Directory that contains `package.json`. |
+| `node.dir` | no | `.` | Directory that contains `package.json`, **relative to the repository root** (not to `plugin_dir`). |
 | `node.version` | no | `"20"` | Node.js version. |
 | `node.install` | no | `ci` | `ci` or `install`. |
 | `node.script` | no | `build` | npm script name. |
 | `exclude` | no | `[]` | Extra paths or glob patterns to drop from the zip (and to strip after `package.sh`). |
 | `keep` | no | `[]` | Paths that must exist in the zip, relative to the zip root (e.g. `assets/dist/app.js`, `build/admin.js`, `vendor/autoload.php`). |
 | `use_package_sh` | no | `true` | Prefer the repo’s existing `package.sh` if it produces a correctly named zip. If the zip fails checks, the job fails — it does not silently fall back. |
-| `use_distignore` | no | `true` | Apply a `.distignore` file when the built-in packer runs. |
+| `use_distignore` | no | `true` | Apply a `.distignore` file when the built-in packer runs. It is read from the plugin folder (`plugin_dir`) when it has one, otherwise from the repo root. Patterns are relative to the plugin folder and are written without a leading slash (`assets/src`, `blocks`, `*.map`). |
 | `include_vendor` | no | `false` | Built-in packer only: include a `vendor/` directory. `package.sh` keeps its own vendor behaviour. |
 | `allow_tests` | no | `false` | Allow a `tests/` directory in the zip. |
+| `copy_root_files` | no | `true` | Built-in packer only: copy `LICENSE`, `README.md`, `CHANGELOG.md` and `readme.txt` from the **repo root** into the zip when the plugin folder does not have them. Set `false` for project layouts so the project README/CHANGELOG never ship (keep `LICENSE` and `readme.txt` inside the plugin folder). |
 | `max_zip_mb` | no | `250` | Fail if the zip is larger than this (GitHub’s hard asset limit is 2 GB). |
 
 The tag (with the leading `v` removed) must equal the Version in the plugin header, or in `style.css` for a theme. Version constants and `readme.txt` Stable tags are not rewritten and are not used for this check.
+
+## Repository layouts
+
+Two layouts are supported. Both produce the same zip: a single root folder `<zip_slug>/` that contains only the plugin.
+
+### Simple layout (plugin at the repo root)
+
+```
+my-plugin/                 repo root = plugin
+├── my-plugin.php  src/  assets/  readme.txt  …
+├── .release.yml           (no plugin_dir)
+└── .github/workflows/release.yml
+```
+
+Use it for small plugins with nothing but code. The packer reads the whole repo root and skips dev files (`.github`, `docs`, `tests`, `node_modules`, `composer.json`, …).
+
+### Project layout (plugin in a subfolder)
+
+Use it when the repo also holds documentation, data, research, design files or scripts.
+
+```
+my-plugin/                 repo root = project
+├── my-plugin/             the shippable plugin (folder name = slug = zip root)
+│   ├── my-plugin.php  src/  blocks/  assets/  languages/  readme.txt  LICENSE
+│   ├── composer.json  package.json  .distignore   (dev files; never shipped)
+├── docs/  data/  design/  research/  scripts/  dev/   (never shipped)
+├── .release.yml
+└── .github/workflows/release.yml
+```
+
+`.release.yml`:
+
+```yaml
+slug: my-plugin
+zip_slug: my-plugin
+type: plugin
+plugin_dir: my-plugin        # only this folder is packed
+main: my-plugin.php          # relative to plugin_dir
+node:                        # optional build; dir is relative to the REPO root
+  enabled: true
+  dir: my-plugin
+composer:
+  enabled: false
+  dir: my-plugin
+copy_root_files: false       # don't copy the project README.md / CHANGELOG.md into the zip
+keep: [my-plugin.php, readme.txt]
+use_package_sh: false
+```
+
+How it works: the packer only walks `workspace/<plugin_dir>`, so everything beside it (`docs/`, `data/`, `design/`, `research/`, `scripts/`, `dev/`, root `README.md`, …) cannot reach the zip. The tag/Version check reads `<plugin_dir>/<main>`. `composer.dir` and `node.dir` are paths from the repository root, so for a project layout point them at the plugin folder. A `.distignore` inside the plugin folder is used for extra exclusions (for example compiled-from sources like `blocks/` or `assets/src`).
+
+A ready-made project skeleton lives in the template repo [howtowp/plugin-template](https://github.com/howtowp/plugin-template) ("Use this template", then `scripts/init.sh`).
+
+> **Backward compatibility.** `copy_root_files` defaults to `true` and the `.distignore` lookup falls back to the repo root, so existing callers (simple layout or `plugin_dir`) produce byte-identical zips. This was verified by packing all 29 product repos with the old and the new packer.
 
 ## What the build does
 

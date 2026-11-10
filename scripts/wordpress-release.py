@@ -125,6 +125,9 @@ def load_config(path: Path) -> dict:
         "use_package_sh": bool(data.get("use_package_sh", True)),
         "use_distignore": bool(data.get("use_distignore", True)),
         "allow_tests": bool(data.get("allow_tests", False)),
+        # Built-in packer: copy LICENSE/README.md/CHANGELOG.md/readme.txt from the repo root into
+        # the zip when the plugin folder lacks them. Default true (legacy). Project layouts set false.
+        "copy_root_files": bool(data.get("copy_root_files", True)),
         "include_vendor": bool(data.get("include_vendor", False)),
         "max_zip_mb": float(data.get("max_zip_mb") or 250),
     }
@@ -190,8 +193,11 @@ def find_zip(dist: Path, zip_slug: str, version: str) -> Path:
     return expected
 
 
-def load_distignore(workspace: Path) -> list[str]:
+def load_distignore(workspace: Path, root: Path | None = None) -> list[str]:
+    # Prefer the plugin folder's .distignore (project layout), else the repo root's (legacy).
     path = workspace / ".distignore"
+    if root is not None and (root / ".distignore").is_file():
+        path = root / ".distignore"
     if not path.is_file():
         return []
     patterns = []
@@ -222,9 +228,9 @@ def built_in_pack(workspace: Path, cfg: dict, version: str, dest: Path) -> Path:
     if cfg["allow_tests"]:
         skip.discard("tests")
     extra = list(cfg["exclude"])
-    if cfg["use_distignore"]:
-        extra.extend(load_distignore(workspace))
     src_root = plugin_root(workspace, cfg)
+    if cfg["use_distignore"]:
+        extra.extend(load_distignore(workspace, src_root))
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
         dest.unlink()
@@ -252,7 +258,7 @@ def built_in_pack(workspace: Path, cfg: dict, version: str, dest: Path) -> Path:
                 )
             else:
                 shutil.copy2(item, target)
-        for extra_name in ("LICENSE", "README.md", "CHANGELOG.md", "readme.txt"):
+        for extra_name in (("LICENSE", "README.md", "CHANGELOG.md", "readme.txt") if cfg["copy_root_files"] else ()):
             src = workspace / extra_name
             target = plugin / extra_name
             if src.exists() and not target.exists() and src.resolve() != target.resolve():

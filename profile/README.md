@@ -116,6 +116,10 @@ How to WP یک **اشتراک ماهانه** است — تقریباً به‌ق
 ![Telegram](https://img.shields.io/badge/Telegram-26A5E4?logo=telegram&logoColor=white)
 ![REST API](https://img.shields.io/badge/REST%20API-222222)
 
+## برای توسعه‌دهنده‌ها
+
+قالب استاندارد ساخت افزونه‌ی جدید (ساختار پروژه، ماژول‌ها، Abilities API، بلاک تعاملی، ریلیز خودکار و `AGENTS.md`) در ریپوی عمومی [howtowp/plugin-template](https://github.com/howtowp/plugin-template) است.
+
 ## ارتباط
 
 - وب‌سایت: [howtowp.ir](https://howtowp.ir)
@@ -221,6 +225,10 @@ Source repositories remain private. Public product pages, versions, and requirem
 ![REST API](https://img.shields.io/badge/REST%20API-222222)
 
 The collection is built around WordPress and WooCommerce, with first-class support for Iranian payments, Jalali dates, RTL admin, and Telegram / Bale. Plugins are distributed as readable, GPL-licensed source.
+
+### For developers
+
+The standard starter for new plugins (project layout, modules, Abilities API, interactive block, automated release, `AGENTS.md`) is the public template [howtowp/plugin-template](https://github.com/howtowp/plugin-template).
 
 ### Contact
 

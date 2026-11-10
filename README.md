@@ -7,4 +7,6 @@ This public repository holds:
 
 Private product zips are built by [`.github/workflows/wordpress-release.yml`](.github/workflows/wordpress-release.yml). See [docs/wordpress-release.md](docs/wordpress-release.md) for the config schema, caller snippet, and behaviour.
 
+Starting a new plugin? Use the template repo [howtowp/plugin-template](https://github.com/howtowp/plugin-template) (project layout, PSR-4 modules, release workflow). Layouts are documented in [docs/wordpress-release.md](docs/wordpress-release.md#repository-layouts).
+
 This workflow does **not** ship a WordPress dashboard auto-updater. Customers download releases from [howtowp.ir](https://howtowp.ir).
