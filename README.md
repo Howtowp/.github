@@ -4,6 +4,7 @@ This public repository holds:
 
 - The organization profile (`profile/README.md`), shown on [github.com/Howtowp](https://github.com/Howtowp)
 - The reusable WordPress release workflow (no secrets) used by private product repositories
+- The canonical [`schemas/product.schema.json`](schemas/product.schema.json) for each product repo's bilingual `product.json` (store copy that an agent fills; howtowp-core later syncs it to howtowp.ir). A convenience copy also lives in [plugin-template](https://github.com/Howtowp/plugin-template/blob/main/product.schema.json).
 
 Private product zips are built by [`.github/workflows/wordpress-release.yml`](.github/workflows/wordpress-release.yml). See [docs/wordpress-release.md](docs/wordpress-release.md) for the config schema, caller snippet, and behaviour.
 

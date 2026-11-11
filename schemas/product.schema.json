@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Howtowp/.github/main/schemas/product.schema.json",
+  "title": "How to WP product.json",
+  "description": "Store-facing product copy that lives at the root of a How to WP product repository (not inside the plugin zip folder). howtowp-core later syncs this file from a GitHub Release asset onto the howtowp.ir product page. Every customer-facing text field is bilingual: an object with required 'fa' and 'en' strings. Do not put version, changelog, Requires at least, Requires PHP, Tested up to, or the zip filename here — those come from the plugin header, readme.txt, CHANGELOG.md and the GitHub Release. Do not put price, club membership, or other store-only editorial policy here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "catalog_slug",
+    "wc_slug",
+    "code_repo",
+    "name",
+    "tagline",
+    "short_description",
+    "features",
+    "use_cases",
+    "faq",
+    "audience",
+    "ai_guide"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://raw.githubusercontent.com/Howtowp/.github/main/schemas/product.schema.json",
+      "description": "Must point at this canonical schema URL."
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Version of this schema. Bump only when the schema itself changes."
+    },
+    "catalog_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable public catalog slug, e.g. woo-sync. Set once; do not rename without a migration plan."
+    },
+    "wc_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "WooCommerce product post slug on howtowp.ir, e.g. woo-sync-plugin. May differ from catalog_slug."
+    },
+    "code_repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "description": "GitHub owner/repo in lowercase, e.g. howtowp/woo-sync."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["plugin", "theme"],
+      "default": "plugin",
+      "description": "Product type. Optional; defaults to plugin."
+    },
+    "name": {
+      "$ref": "#/$defs/localized_text",
+      "description": "Short product name (e.g. ووسینک / WooSync), not the long WooCommerce H1 and not the SEO title."
+    },
+    "store_title": {
+      "$ref": "#/$defs/localized_text",
+      "description": "Optional longer title for the store H1 if it should differ from name."
+    },
+    "tagline": {
+      "$ref": "#/$defs/localized_text",
+      "description": "One-line hero tagline."
+    },
+    "short_description": {
+      "$ref": "#/$defs/localized_text",
+      "description": "Short paragraph for the hero excerpt and schema description. Plain text, no HTML."
+    },
+    "features": {
+      "type": "array",
+      "description": "Key feature cards for the امکانات tab. Only features that exist in the code. Keep each item's id stable across edits.",
+      "items": { "$ref": "#/$defs/feature" }
+    },
+    "use_cases": {
+      "type": "array",
+      "description": "Problem / solution pairs for the کاربرد و راه‌کار tab. Keep each item's id stable.",
+      "items": { "$ref": "#/$defs/use_case" }
+    },
+    "faq": {
+      "type": "array",
+      "description": "Seed questions and answers for the product FAQ. Keep each item's id stable. User-generated Q&A on the site is separate.",
+      "items": { "$ref": "#/$defs/faq_item" }
+    },
+    "audience": {
+      "$ref": "#/$defs/audience",
+      "description": "Who the product is for: store owners / regular users, and vibe coders who will extend it."
+    },
+    "demo_url": {
+      "$ref": "#/$defs/url_or_null",
+      "description": "Public live demo URL, or null when there is none."
+    },
+    "video_url": {
+      "$ref": "#/$defs/url_or_null",
+      "description": "Intro / demo video URL (YouTube, Vimeo, or MP4), or null when there is none."
+    },
+    "product_page": {
+      "$ref": "#/$defs/url_or_null",
+      "description": "Optional canonical store product URL, e.g. https://howtowp.ir/product/woo-sync-plugin/."
+    },
+    "requirements_notes": {
+      "$ref": "#/$defs/localized_text",
+      "description": "Extra requirement notes that are not already in the plugin header or readme.txt (for example 'WooCommerce must be active on every connected site'). Do not repeat Requires at least / Requires PHP / Tested up to."
+    },
+    "ai_guide": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the customer AI-GUIDE.md, relative to the repository root. In the project layout this is '<plugin_dir>/AI-GUIDE.md' so the file ships inside the zip. Do not point at AGENTS.md."
+    }
+  },
+  "$defs": {
+    "localized_text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fa", "en"],
+      "properties": {
+        "fa": {
+          "type": "string",
+          "description": "Persian (Farsi) text. Use Persian yeh/keh. Plain text, no HTML."
+        },
+        "en": {
+          "type": "string",
+          "description": "English text. Plain text, no HTML."
+        }
+      }
+    },
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable kebab-case id. Once published, do not rename it; add a new item instead."
+    },
+    "url_or_null": {
+      "type": ["string", "null"],
+      "format": "uri"
+    },
+    "feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "icon": {
+          "type": "string",
+          "description": "Icon hint for the theme (a Material Symbols / Dashicons-style name such as sync, tune, or inventory_2). Not a file path."
+        },
+        "title": { "$ref": "#/$defs/localized_text" },
+        "description": { "$ref": "#/$defs/localized_text" }
+      }
+    },
+    "use_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "problem", "solution"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "problem": { "$ref": "#/$defs/localized_text" },
+        "solution": { "$ref": "#/$defs/localized_text" }
+      }
+    },
+    "faq_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "question", "answer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "question": { "$ref": "#/$defs/localized_text" },
+        "answer": { "$ref": "#/$defs/localized_text" }
+      }
+    },
+    "audience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["regular_users", "vibe_coders"],
+      "properties": {
+        "regular_users": {
+          "type": "array",
+          "description": "Bullets for store owners and everyday users.",
+          "items": { "$ref": "#/$defs/localized_text" }
+        },
+        "vibe_coders": {
+          "type": "array",
+          "description": "Bullets for developers and vibe coders who will extend the product with Cursor or a companion plugin.",
+          "items": { "$ref": "#/$defs/localized_text" }
+        }
+      }
+    }
+  }
+}
