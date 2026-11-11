@@ -48,7 +48,10 @@
     },
     "type": {
       "type": "string",
-      "enum": ["plugin", "theme"],
+      "enum": [
+        "plugin",
+        "theme"
+      ],
       "default": "plugin",
       "description": "Product type. Optional; defaults to plugin."
     },
@@ -70,18 +73,24 @@
     },
     "features": {
       "type": "array",
-      "description": "Key feature cards for the امکانات tab. Only features that exist in the code. Keep each item's id stable across edits.",
-      "items": { "$ref": "#/$defs/feature" }
+      "description": "Key feature cards for the امکانات فنی tab (2-column grid: Material Symbol icon, short title, 1–2 sentence text). Write 6 to 9 items. Title: 2 to 5 words, benefit first. Description: what it does and why it matters. Only features that exist in the code. Keep each item's id stable across edits.",
+      "items": {
+        "$ref": "#/$defs/feature"
+      }
     },
     "use_cases": {
       "type": "array",
       "description": "Problem / solution pairs for the کاربرد و راه‌کار tab. Keep each item's id stable.",
-      "items": { "$ref": "#/$defs/use_case" }
+      "items": {
+        "$ref": "#/$defs/use_case"
+      }
     },
     "faq": {
       "type": "array",
       "description": "Seed questions and answers for the product FAQ. Keep each item's id stable. User-generated Q&A on the site is separate.",
-      "items": { "$ref": "#/$defs/faq_item" }
+      "items": {
+        "$ref": "#/$defs/faq_item"
+      }
     },
     "audience": {
       "$ref": "#/$defs/audience",
@@ -107,13 +116,23 @@
       "type": "string",
       "minLength": 1,
       "description": "Path to the customer AI-GUIDE.md, relative to the repository root. In the project layout this is '<plugin_dir>/AI-GUIDE.md' so the file ships inside the zip. Do not point at AGENTS.md."
+    },
+    "description_sections": {
+      "type": "array",
+      "description": "Optional structured long description for the توضیحات tab article (WooCommerce product content, rendered as article.htw-product-prose). Preferred over free-form HTML so howtowp-core can sync or render it. Use the canonical section ids in this order: opener, audience, how_it_works, key_features, use_cases, why_howtowp, requirements, cta. Each id may appear at most once. The use-case cards (top of the same tab) come from use_cases; the feature cards (امکانات tab) come from features. Do not paste those arrays verbatim into these sections. For key_features, body is a short intro only — the renderer lists features[]. For how_it_works, provide exactly three steps. Plain text only; no HTML, no prices, no version numbers from the header.",
+      "items": {
+        "$ref": "#/$defs/description_section"
+      }
     }
   },
   "$defs": {
     "localized_text": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["fa", "en"],
+      "required": [
+        "fa",
+        "en"
+      ],
       "properties": {
         "fa": {
           "type": "string",
@@ -131,59 +150,170 @@
       "description": "Stable kebab-case id. Once published, do not rename it; add a new item instead."
     },
     "url_or_null": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "format": "uri"
     },
     "feature": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "title", "description"],
+      "required": [
+        "id",
+        "title",
+        "description"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/stable_id" },
+        "id": {
+          "$ref": "#/$defs/stable_id"
+        },
         "icon": {
           "type": "string",
           "description": "Icon hint for the theme (a Material Symbols / Dashicons-style name such as sync, tune, or inventory_2). Not a file path."
         },
-        "title": { "$ref": "#/$defs/localized_text" },
-        "description": { "$ref": "#/$defs/localized_text" }
+        "title": {
+          "$ref": "#/$defs/localized_text"
+        },
+        "description": {
+          "$ref": "#/$defs/localized_text"
+        }
       }
     },
     "use_case": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "problem", "solution"],
+      "required": [
+        "id",
+        "problem",
+        "solution"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/stable_id" },
-        "problem": { "$ref": "#/$defs/localized_text" },
-        "solution": { "$ref": "#/$defs/localized_text" }
+        "id": {
+          "$ref": "#/$defs/stable_id"
+        },
+        "problem": {
+          "$ref": "#/$defs/localized_text"
+        },
+        "solution": {
+          "$ref": "#/$defs/localized_text"
+        }
       }
     },
     "faq_item": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "question", "answer"],
+      "required": [
+        "id",
+        "question",
+        "answer"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/stable_id" },
-        "question": { "$ref": "#/$defs/localized_text" },
-        "answer": { "$ref": "#/$defs/localized_text" }
+        "id": {
+          "$ref": "#/$defs/stable_id"
+        },
+        "question": {
+          "$ref": "#/$defs/localized_text"
+        },
+        "answer": {
+          "$ref": "#/$defs/localized_text"
+        }
       }
     },
     "audience": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["regular_users", "vibe_coders"],
+      "required": [
+        "regular_users",
+        "vibe_coders"
+      ],
       "properties": {
         "regular_users": {
           "type": "array",
           "description": "Bullets for store owners and everyday users.",
-          "items": { "$ref": "#/$defs/localized_text" }
+          "items": {
+            "$ref": "#/$defs/localized_text"
+          }
         },
         "vibe_coders": {
           "type": "array",
           "description": "Bullets for developers and vibe coders who will extend the product with Cursor or a companion plugin.",
-          "items": { "$ref": "#/$defs/localized_text" }
+          "items": {
+            "$ref": "#/$defs/localized_text"
+          }
         }
       }
+    },
+    "description_section_id": {
+      "type": "string",
+      "enum": [
+        "opener",
+        "audience",
+        "how_it_works",
+        "key_features",
+        "use_cases",
+        "why_howtowp",
+        "requirements",
+        "cta"
+      ]
+    },
+    "description_section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "body"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/description_section_id"
+        },
+        "heading": {
+          "$ref": "#/$defs/localized_text",
+          "description": "Section heading (rendered as h2). Omit for opener — the article must not start with an h1."
+        },
+        "body": {
+          "$ref": "#/$defs/localized_text",
+          "description": "Section prose. Plain text. Use blank lines to separate paragraphs. No HTML."
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/localized_text"
+          },
+          "description": "Exactly three steps. Required when id is how_it_works."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/localized_text"
+          },
+          "description": "Optional bullets for audience, why_howtowp, or requirements."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "id": {
+                "const": "how_it_works"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "then": {
+            "required": [
+              "id",
+              "body",
+              "steps"
+            ]
+          }
+        }
+      ]
     }
   }
 }
